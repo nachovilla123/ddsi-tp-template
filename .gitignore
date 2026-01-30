@@ -38,3 +38,15 @@ build/
 
 ### Mac OS ###
 .DS_Store
+
+### Logs ###
+logs/
+*.log
+
+### Database ###
+*.db
+*.h2.db
+
+### Environment ###
+.env
+.env.local
