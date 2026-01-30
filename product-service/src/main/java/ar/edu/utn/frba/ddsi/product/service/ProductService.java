@@ -1,21 +1,71 @@
 package ar.edu.utn.frba.ddsi.product.service;
 
+import ar.edu.utn.frba.ddsi.common.exception.ResourceNotFoundException;
 import ar.edu.utn.frba.ddsi.product.dto.request.CreateProductRequest;
 import ar.edu.utn.frba.ddsi.product.dto.response.ProductResponse;
+import ar.edu.utn.frba.ddsi.product.model.Product;
+import ar.edu.utn.frba.ddsi.product.repository.ProductRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
-public interface ProductService {
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class ProductService {
 
-    ProductResponse create(CreateProductRequest request);
+    private final ProductRepository productRepository;
 
-    ProductResponse findById(Long id);
+    public ProductResponse create(CreateProductRequest request) {
+        Product product = new Product();
+        product.setName(request.getName());
+        product.setDescription(request.getDescription());
+        product.setPrice(request.getPrice());
 
-    List<ProductResponse> findAll();
+        Product savedProduct = productRepository.save(product);
+        return ProductResponse.from(savedProduct);
+    }
 
-    ProductResponse update(Long id, CreateProductRequest request);
+    @Transactional(readOnly = true)
+    public ProductResponse findById(Long id) {
+        Product product = productRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Product", "id", id));
+        return ProductResponse.from(product);
+    }
 
-    void delete(Long id);
+    @Transactional(readOnly = true)
+    public List<ProductResponse> findAll() {
+        return productRepository.findAll().stream()
+            .map(ProductResponse::from)
+            .collect(Collectors.toList());
+    }
 
-    List<ProductResponse> searchByName(String name);
+    public ProductResponse update(Long id, CreateProductRequest request) {
+        Product product = productRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Product", "id", id));
+
+        product.setName(request.getName());
+        product.setDescription(request.getDescription());
+        product.setPrice(request.getPrice());
+
+        Product updatedProduct = productRepository.save(product);
+        return ProductResponse.from(updatedProduct);
+    }
+
+    public void delete(Long id) {
+        if (!productRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Product", "id", id);
+        }
+        productRepository.deleteById(id);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProductResponse> searchByName(String name) {
+        return productRepository.findByNameContainingIgnoreCase(name).stream()
+            .map(ProductResponse::from)
+            .collect(Collectors.toList());
+    }
 }
